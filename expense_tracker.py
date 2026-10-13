@@ -5,25 +5,42 @@ from datetime import datetime
 from decimal import Decimal
 
 BASE_FOLDER = os.path.dirname(os.path.abspath(__file__))
+FILE_PATH = os.path.join(BASE_FOLDER, "expenses.json")  # ONE file for everyone
 
 
-def get_file_path(name):
-    """Each user gets their own file, e.g. zoobiya_expenses.json"""
+def make_key(name):
+    """'  Reema   Hamayon ' -> 'reema hamayon' (so the same person is always found)"""
+    return re.sub(r"\s+", " ", name.strip().lower())
+
+
+def old_file_path(name):
+    """Path of the old per-person file, e.g. reema_hamayon_expenses.json"""
     safe = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_") or "user"
     return os.path.join(BASE_FOLDER, f"{safe}_expenses.json")
 
 
-def load_expenses(path):
+def load_data():
     try:
-        with open(path, "r") as file:
-            return json.load(file)
+        with open(FILE_PATH, "r") as file:
+            data = json.load(file)
+            return data if isinstance(data, dict) else {}
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def save_data(data):
+    with open(FILE_PATH, "w") as file:
+        json.dump(data, file, indent=4)
+
+
+def import_old_expenses(name):
+    """If this person has an old personal file, bring their expenses over."""
+    try:
+        with open(old_file_path(name), "r") as file:
+            old = json.load(file)
+            return old if isinstance(old, list) else []
     except (FileNotFoundError, json.JSONDecodeError):
         return []
-
-
-def save_expenses(path, expenses):
-    with open(path, "w") as file:
-        json.dump(expenses, file, indent=4)
 
 
 def read_amount(text):
@@ -58,7 +75,7 @@ def show_expenses(expenses):
     print(f"{'TOTAL':<5}{calculate_total(expenses):>12.2f}")
 
 
-def add_expense(path, expenses):
+def add_expense(data, expenses):
     raw = input("Enter amount: ")
     try:
         amount, exact = read_amount(raw)
@@ -80,11 +97,11 @@ def add_expense(path, expenses):
         "note": note,
         "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
     })
-    save_expenses(path, expenses)
+    save_data(data)
     print(f"Added {amount:.2f} for '{note}'. Running total: {calculate_total(expenses):.2f}")
 
 
-def delete_expense(path, expenses):
+def delete_expense(data, expenses):
     if not expenses:
         print("\nNothing to delete.")
         return
@@ -100,7 +117,7 @@ def delete_expense(path, expenses):
             answer = input(f"Delete {Decimal(item['amount']):.2f} ({item['note']})? (y/n): ")
             if answer.strip().lower() == "y":
                 expenses.remove(item)
-                save_expenses(path, expenses)
+                save_data(data)
                 print("Deleted.")
             else:
                 print("Cancelled.")
@@ -129,11 +146,22 @@ def main():
     while not name:
         name = input("What is your name? ").strip()
 
-    path = get_file_path(name)
-    expenses = load_expenses(path)
+    data = load_data()
+    key = make_key(name)
 
-    print(f"\nWelcome, {name}!")
-    print("Your expenses are saved here:", path)
+    if key not in data:
+        old_expenses = import_old_expenses(name)
+        data[key] = {"name": name.title(), "expenses": old_expenses}
+        save_data(data)
+        if old_expenses:
+            print(f"Found your old file and imported {len(old_expenses)} expense(s).")
+        else:
+            print("New user created.")
+
+    expenses = data[key]["expenses"]  # only THIS person's list
+
+    print(f"\nWelcome, {data[key]['name']}!")
+    print("Everyone's expenses are saved here:", FILE_PATH)
     print(f"Current total: {calculate_total(expenses):.2f}")
 
     while True:
@@ -146,11 +174,11 @@ def main():
         choice = input("Choose an option (1-6): ").strip().lower()
 
         if choice == "1":
-            add_expense(path, expenses)
+            add_expense(data, expenses)
         elif choice == "2":
             show_expenses(expenses)
         elif choice == "3":
-            delete_expense(path, expenses)
+            delete_expense(data, expenses)
         elif choice == "4":
             search_expenses(expenses)
         elif choice == "5":
@@ -160,7 +188,7 @@ def main():
         else:
             print("Invalid option. Please choose 1 to 6.")
 
-    print(f"\nGoodbye, {name}! Total Spent: {calculate_total(expenses):.2f}")
+    print(f"\nGoodbye, {data[key]['name']}! Total Spent: {calculate_total(expenses):.2f}")
 
 
 main()

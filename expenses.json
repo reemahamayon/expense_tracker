@@ -1,0 +1,30 @@
+{
+    "reema": {
+        "name": "Reema",
+        "expenses": [
+            {
+                "id": 1,
+                "amount": "500",
+                "note": "food",
+                "date": "2026-10-13 14:45"
+            },
+            {
+                "id": 2,
+                "amount": "677",
+                "note": "food",
+                "date": "2026-10-13 14:48"
+            }
+        ]
+    },
+    "sijjil": {
+        "name": "Sijjil",
+        "expenses": [
+            {
+                "id": 1,
+                "amount": "299.99",
+                "note": "bus",
+                "date": "2026-10-13 14:46"
+            }
+        ]
+    }
+}
