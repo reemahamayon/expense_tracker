@@ -19,6 +19,11 @@ def old_file_path(name):
     return os.path.join(BASE_FOLDER, f"{safe}_expenses.json")
 
 
+def pause():
+    """Keeps the result on screen until the user presses Enter."""
+    input("\nPress Enter to go back to the menu...")
+
+
 def load_data():
     try:
         with open(FILE_PATH, "r") as file:
@@ -175,18 +180,24 @@ def main():
 
         if choice == "1":
             add_expense(data, expenses)
+            pause()
         elif choice == "2":
             show_expenses(expenses)
+            pause()
         elif choice == "3":
             delete_expense(data, expenses)
+            pause()
         elif choice == "4":
             search_expenses(expenses)
+            pause()
         elif choice == "5":
-            print(f"Total Spent: {calculate_total(expenses):.2f}")
+            print(f"\nTotal Spent: {calculate_total(expenses):.2f}")
+            pause()
         elif choice in ("6", "quit"):
             break
         else:
             print("Invalid option. Please choose 1 to 6.")
+            pause()
 
     print(f"\nGoodbye, {data[key]['name']}! Total Spent: {calculate_total(expenses):.2f}")
 
